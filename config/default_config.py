@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 
 @dataclass
@@ -95,17 +95,36 @@ class PVConfig:
 
 @dataclass
 class ConverterConfig:
-    """Placeholder configuration schema for DC-DC Boost Converter.
+    """Configuration for DC-DC Boost Converter matched to Canadian Solar CS6P-240P.
 
-    Component ratings (inductance L, input/output capacitance C_in/C_out,
-    load resistance R_L, and switching frequency f_sw) will be derived in Phase 2.
+    Component ratings sized for Continuous Conduction Mode (CCM) operation
+    with nominal 48V-50V DC bus voltage and 240W nominal throughput.
     """
 
-    switching_frequency: float = 20_000.0  # Default 20 kHz [Hz]
-    duty_cycle_min: float = 0.05
-    duty_cycle_max: float = 0.95
-    duty_cycle_init: float = 0.50
+    inductance: float = 1.0e-3  # Boost inductance L [H] (1.0 mH)
+    input_capacitance: float = 470.0e-6  # Input decoupling capacitance C_pv [F] (470 uF)
+    output_capacitance: float = 470.0e-6  # Output filter capacitance C_out [F] (470 uF)
+    load_resistance: float = 10.0  # Output resistive load R_load [Ohm]
+    inductor_resistance: float = 0.05  # Inductor series resistance r_L [Ohm] (50 mOhm)
+
+    switching_frequency: float = 20_000.0  # Switching frequency f_sw [Hz] (20 kHz)
+    duty_cycle_min: float = 0.05  # Minimum permitted duty cycle
+    duty_cycle_max: float = 0.90  # Maximum permitted duty cycle
+    duty_cycle_init: float = 0.35  # Nominal initial duty cycle
+
+    time_step: float = 1.0e-4  # Converter simulation step dt [s] (0.1 ms)
+
+    # Initial physical state conditions [V_pv, i_L, V_out]
+    v_pv_init: float = 29.9  # Initial PV voltage [V]
+    i_l_init: float = 8.0  # Initial inductor current [A]
+    v_out_init: float = 48.0  # Initial output voltage [V]
+
     custom_params: Dict[str, Any] = field(default_factory=dict)
+
+    def get_initial_state(self) -> Tuple[float, float, float]:
+        """Return initial state vector [V_pv, i_L, V_out]."""
+        return (self.v_pv_init, self.i_l_init, self.v_out_init)
+
 
 
 @dataclass

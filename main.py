@@ -34,6 +34,11 @@ def parse_args() -> argparse.Namespace:
         help="Generate I-V/P-V characteristics, export metrics CSV, and generate publication plots.",
     )
     parser.add_argument(
+        "--simulate-converter",
+        action="store_true",
+        help="Simulate DC-DC boost converter dynamic response to duty cycle step.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -109,7 +114,42 @@ def main() -> int:
         )
         logger.info(f"Generated {len(plot_paths)} publication figures in: {config.paths.graphs_dir}")
 
-    logger.info("Operational status: PHASE 2 PV CHARACTERISTICS & MPP IDENTIFICATION OPERATIONAL.")
+    if args.simulate_converter:
+        from app.converter import BoostConverter
+        from app.converter.converter_visualization import generate_all_phase_3_plots
+
+        logger.info("Executing Phase 3 DC-DC Boost Converter Simulation...")
+        converter = BoostConverter()
+
+        duty_profile = lambda t: 0.35 if t < 0.05 else 0.45
+        df = converter.simulate(duration=0.10, duty_cycle=duty_profile, dt=converter.default_dt)
+
+        csv_path = config.paths.metrics_dir / "phase_3_converter_simulation.csv"
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(csv_path, index=False)
+        logger.info(f"Saved {len(df)} simulation steps to: {csv_path}")
+
+        # Compute steady states
+        pre_idx = int(0.045 / converter.default_dt)
+        post_idx = len(df) - 1
+        s1 = df.iloc[pre_idx]
+        s2 = df.iloc[post_idx]
+
+        logger.info("Phase 3 Simulation Results:")
+        logger.info(f"  Steady State 1 (D = {s1['duty_cycle']:.2f}):")
+        logger.info(f"    V_pv = {s1['v_pv']:.2f} V | I_pv = {s1['i_pv']:.2f} A | P_pv = {s1['p_pv']:.2f} W")
+        logger.info(f"    V_out = {s1['v_out']:.2f} V | I_out = {s1['i_out']:.2f} A | P_out = {s1['p_out']:.2f} W")
+        logger.info(f"    Efficiency = {s1['efficiency']:.2f} % | CCM Mode: {s1['is_ccm']}")
+        logger.info(f"  Steady State 2 (D = {s2['duty_cycle']:.2f}):")
+        logger.info(f"    V_pv = {s2['v_pv']:.2f} V | I_pv = {s2['i_pv']:.2f} A | P_pv = {s2['p_pv']:.2f} W")
+        logger.info(f"    V_out = {s2['v_out']:.2f} V | I_out = {s2['i_out']:.2f} A | P_out = {s2['p_out']:.2f} W")
+        logger.info(f"    Efficiency = {s2['efficiency']:.2f} % | CCM Mode: {s2['is_ccm']}")
+
+        plots_dir = config.paths.graphs_dir / "phase_3"
+        plot_paths = generate_all_phase_3_plots(df, output_dir=plots_dir)
+        logger.info(f"Generated {len(plot_paths)} converter transient plots in: {plots_dir}")
+
+    logger.info("Operational status: PHASE 3 DC-DC BOOST CONVERTER MODELLING & SIMULATION OPERATIONAL.")
     return 0
 
 

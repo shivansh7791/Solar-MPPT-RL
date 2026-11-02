@@ -55,11 +55,14 @@ data/models/*.onnx
 !data/models/.gitkeep
 
 # Generated experiment artifacts & large log outputs
-results/experiment_logs/*.log
+results/experiment_logs/**/*.log
+results/graphs/**/*.png
 results/graphs/*.png
-results/graphs/*.pdf
-results/graphs/*.svg
+results/graphs/**/*.pdf
+results/graphs/**/*.svg
+results/metrics/**/*.csv
 results/metrics/*.csv
+results/metrics/**/*.json
 results/metrics/*.json
 !results/experiment_logs/.gitkeep
 !results/graphs/.gitkeep
