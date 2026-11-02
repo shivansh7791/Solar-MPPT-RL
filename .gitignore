@@ -55,6 +55,9 @@ data/models/*.onnx
 !data/models/.gitkeep
 artifacts/
 *.pdf
+*.pptx
+results/diagrams/original_assets/
+build_*_mppt_presentation.py
 
 
 # Generated experiment artifacts & large log outputs
