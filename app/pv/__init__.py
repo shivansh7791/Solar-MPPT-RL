@@ -1,6 +1,9 @@
 """Solar PV modeling subpackage.
 
-Responsible for physics-based single-diode modeling, I-V / P-V curve generation,
-and temperature/irradiance dependency using pvlib and numerical methods.
-(Implementation reserved for Phase 1).
+Responsible for physics-based single-diode modeling, operating point calculation,
+and temperature/irradiance dependency using pvlib and the CEC parameter database.
 """
+
+from app.pv.pv_model import PVOutput, SolarPVModel
+
+__all__ = ["PVOutput", "SolarPVModel"]

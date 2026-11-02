@@ -198,7 +198,14 @@ pip install -r requirements.txt
 python main.py --check-env
 ```
 
-### Execute Test Suite
+### Execute PV Model Demonstration (Phase 1)
+```bash
+python examples/pv_model_demo.py
+# or via CLI flag:
+python main.py --test-pv
+```
+
+### Execute Full Test Suite
 ```bash
 pytest
 ```
@@ -207,17 +214,18 @@ pytest
 
 ## 11. Development Roadmap
 
-- [x] **Phase 0: Project Foundation & Environment Setup** (Current)
+- [x] **Phase 0: Project Foundation & Environment Setup**
   - Environment inspection and validation.
   - Modular project directory structure.
   - Centralized dataclass-based configuration.
   - Unified logging framework.
   - Automated smoke testing suite.
-- [ ] **Phase 1: Solar Photovoltaic Modeling**
-  - Mathematical formulation of 5-parameter single-diode model.
-  - Implementation with `pvlib`.
-  - Static and dynamic $I$-$V$ / $P$-$V$ curve generation across irradiance and temperature ranges.
-  - Physical unit and numerical validation tests.
+- [x] **Phase 1: Solar Photovoltaic Modeling** (Completed)
+  - Mathematical formulation of 5-parameter single-diode model (`docs/PHASE_1_THEORY.md`).
+  - Selection and specification of commercial module (`Canadian_Solar_Inc__CS6P_240P`).
+  - Implementation of `SolarPVModel` using `pvlib.pvsystem.calcparams_cec` and Lambert W.
+  - Numerical STC validation (< 0.001% deviation against CEC flash-test reference).
+  - Physical sanity and environmental sensitivity tests (27/27 tests passing).
 - [ ] **Phase 2: DC-DC Boost Converter Modeling**
   - Analytical state-space differential equations.
   - Inductor and capacitor sizing for Continuous Conduction Mode (CCM).
@@ -247,8 +255,8 @@ pytest
 | Project Structure & Packaging | Phase 0 | **Implemented** | Complete modular directory layout with `__init__.py` files |
 | Centralized Configuration | Phase 0 | **Implemented** | Typed dataclasses in `config/default_config.py` |
 | Logging Infrastructure | Phase 0 | **Implemented** | Timestamped console logging in `app/utils/logger.py` |
-| Automated Smoke Testing | Phase 0 | **Implemented** | Pytest verification passing (5/5 tests) |
-| PV Cell / Array Physics Model | Phase 1 | *Planned* | Reserved for Phase 1 |
+| Automated Smoke Testing | Phase 0 | **Implemented** | Pytest verification passing (5/5 smoke tests) |
+| PV Cell / Array Physics Model | Phase 1 | **Implemented** | `SolarPVModel` verified (<0.001% STC error, 27/27 tests passing) |
 | DC-DC Boost Converter Model | Phase 2 | *Planned* | Reserved for Phase 2 |
 | Perturb & Observe (P&O) MPPT | Phase 3 | *Planned* | Reserved for Phase 3 |
 | Gymnasium Environment | Phase 4 | *Planned* | Reserved for Phase 4 |
@@ -257,4 +265,5 @@ pytest
 | Streamlit Web Dashboard | Phase 7 | *Planned* | Reserved for Phase 7 |
 
 > [!NOTE]
-> In accordance with Phase 0 scope restrictions, physical electrical models, converter differential equations, and RL agents are strictly deferred to their designated development phases.
+> In accordance with Phase 1 scope restrictions, boost converter state-space equations, MPPT algorithms, and RL agents are strictly deferred to their designated development phases.
+

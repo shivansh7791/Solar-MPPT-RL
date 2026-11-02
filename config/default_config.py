@@ -28,18 +28,69 @@ class SimulationConfig:
 
 @dataclass
 class PVConfig:
-    """Placeholder configuration schema for PV array models.
+    """Configuration for PV module and array based on Canadian Solar CS6P-240P.
 
-    Detailed physical ratings (e.g., Voc, Isc, Vmp, Imp, temp coefficients)
-    will be established and mathematically justified in Phase 1.
+    Parameters derived from the California Energy Commission (CEC) database via pvlib.
     """
 
-    panel_model: str = "GENERIC_PV"
+    manufacturer: str = "Canadian Solar Inc."
+    model_name: str = "CS6P-240P"
+    panel_model: str = "Canadian_Solar_Inc__CS6P_240P"
+    technology: str = "Multi-c-Si"
+    num_cells_in_series: int = 60
     num_series_modules: int = 1
     num_parallel_strings: int = 1
+
+    # Standard Test Condition (STC) Reference Values
     stc_irradiance: float = 1000.0  # W/m^2
     stc_temperature: float = 25.0  # °C
+
+    # Reference STC Datasheet Ratings
+    stc_i_sc: float = 8.59  # Short-circuit current [A]
+    stc_v_oc: float = 37.0  # Open-circuit voltage [V]
+    stc_v_mp: float = 29.9  # Voltage at maximum power point [V]
+    stc_i_mp: float = 8.03  # Current at maximum power point [A]
+    stc_p_mp: float = 240.097  # Maximum power [W]
+
+    # Temperature Coefficients
+    alpha_sc: float = 0.005472  # Temp coeff of Isc [A/°C]
+    beta_oc: float = -0.135198  # Temp coeff of Voc [V/°C]
+    gamma_r: float = -0.4538  # Temp coeff of Pmp [%/°C]
+    t_noct: float = 44.1  # Nominal Operating Cell Temperature [°C]
+
+    # Single-Diode CEC 5-Parameter Empirical Values (De Soto Model)
+    a_ref: float = 1.577654  # Modified ideality factor [V]
+    I_L_ref: float = 8.599262  # Light-generated current at STC [A]
+    I_o_ref: float = 5.52853e-10  # Diode reverse saturation current at STC [A]
+    R_s: float = 0.310448  # Series resistance [Ohm]
+    R_sh_ref: float = 287.92276  # Shunt resistance at STC [Ohm]
+    Adjust: float = 3.568598  # Temperature adjustment parameter
+
     custom_params: Dict[str, Any] = field(default_factory=dict)
+
+    def get_cec_parameters(self) -> Dict[str, Any]:
+        """Return parameters dictionary formatted for pvlib CEC single-diode functions."""
+        return {
+            "alpha_sc": self.alpha_sc,
+            "a_ref": self.a_ref,
+            "I_L_ref": self.I_L_ref,
+            "I_o_ref": self.I_o_ref,
+            "R_sh_ref": self.R_sh_ref,
+            "R_s": self.R_s,
+            "Adjust": self.Adjust,
+            "N_s": self.num_cells_in_series,
+        }
+
+    def get_stc_reference_dict(self) -> Dict[str, float]:
+        """Return reference STC electrical values."""
+        return {
+            "i_sc": self.stc_i_sc,
+            "v_oc": self.stc_v_oc,
+            "v_mp": self.stc_v_mp,
+            "i_mp": self.stc_i_mp,
+            "p_mp": self.stc_p_mp,
+        }
+
 
 
 @dataclass

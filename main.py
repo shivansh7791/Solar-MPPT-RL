@@ -24,6 +24,11 @@ def parse_args() -> argparse.Namespace:
         help="Perform a foundational environment and configuration health check.",
     )
     parser.add_argument(
+        "--test-pv",
+        action="store_true",
+        help="Execute single-diode PV model at STC and display electrical outputs.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -38,18 +43,31 @@ def main() -> int:
     args = parse_args()
     logger = setup_logger("mppt_main", level=args.log_level)
 
-    logger.info("Initializing RL-Based Solar MPPT Project (Phase 0 Foundation)...")
+    logger.info("Initializing RL-Based Solar MPPT Project...")
 
     config = get_default_config()
     logger.info(f"Loaded Master Configuration with random seed: {config.simulation.seed}")
+    logger.info(f"Configured PV Module: {config.pv.manufacturer} {config.pv.model_name}")
     logger.info(f"Default simulation time step dt: {config.simulation.time_step} s")
     logger.info(f"Root directory resolved to: {config.paths.root_dir}")
 
     if args.check_env:
         logger.info("Environment check completed successfully: All foundational subpackages operational.")
 
-    logger.info("Phase 0 operational status: READY FOR PHASE 1 APPROVAL.")
+    if args.test_pv:
+        from app.pv import SolarPVModel
+        pv_model = SolarPVModel(config.pv)
+        stc = pv_model.get_stc_parameters()
+        logger.info(f"PV STC Evaluation ({config.pv.model_name}):")
+        logger.info(f"  Pmp = {stc.p_mp:.3f} W (Ref: {config.pv.stc_p_mp:.3f} W)")
+        logger.info(f"  Vmp = {stc.v_mp:.3f} V (Ref: {config.pv.stc_v_mp:.3f} V)")
+        logger.info(f"  Imp = {stc.i_mp:.3f} A (Ref: {config.pv.stc_i_mp:.3f} A)")
+        logger.info(f"  Voc = {stc.v_oc:.3f} V (Ref: {config.pv.stc_v_oc:.3f} V)")
+        logger.info(f"  Isc = {stc.i_sc:.3f} A (Ref: {config.pv.stc_i_sc:.3f} A)")
+
+    logger.info("Phase 1 operational status: PV MATHEMATICAL MODEL OPERATIONAL.")
     return 0
+
 
 
 if __name__ == "__main__":
