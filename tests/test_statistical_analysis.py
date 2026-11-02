@@ -92,3 +92,6 @@ class TestStatisticalAnalysis:
         assert pytest.approx(summary.overall_mean_efficiency_gain, abs=0.01) == 1.5
         assert summary.total_energy_gain_joules == 25.0
         assert summary.efficiency_stats.is_statistically_significant_05 is True
+        assert summary.overall_energy_weighted_sac_efficiency > 99.0
+        assert summary.overall_energy_weighted_po_efficiency > 98.0
+        assert summary.total_ideal_energy_joules > 0.0

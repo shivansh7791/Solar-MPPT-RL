@@ -98,12 +98,31 @@ class ResultExporter:
         po_df = metrics_df[po_mask]
         sac_df = metrics_df[sac_mask]
 
+        tot_ideal = float((po_df["energy_harvested_joules"] / (po_df["tracking_efficiency"] / 100.0)).sum())
+        po_tot_e = float(po_df["energy_harvested_joules"].sum())
+        sac_tot_e = float(sac_df["energy_harvested_joules"].sum())
+
+        po_weighted_eff = (po_tot_e / tot_ideal) * 100.0
+        sac_weighted_eff = (sac_tot_e / tot_ideal) * 100.0
+
         summary_data = [
             {
-                "metric": "Mean Tracking Efficiency (%)",
+                "metric": "Arithmetic Mean Scenario Tracking Efficiency (%)",
                 "PO": round(float(po_df["tracking_efficiency"].mean()), 2),
                 "SAC": round(float(sac_df["tracking_efficiency"].mean()), 2),
                 "Difference (SAC - PO)": round(float(sac_df["tracking_efficiency"].mean() - po_df["tracking_efficiency"].mean()), 2),
+            },
+            {
+                "metric": "Energy-Weighted Aggregate Tracking Efficiency (%)",
+                "PO": round(float(po_weighted_eff), 2),
+                "SAC": round(float(sac_weighted_eff), 2),
+                "Difference (SAC - PO)": round(float(sac_weighted_eff - po_weighted_eff), 2),
+            },
+            {
+                "metric": "Total Ideal Available PV Energy (Joules)",
+                "PO": round(tot_ideal, 2),
+                "SAC": round(tot_ideal, 2),
+                "Difference (SAC - PO)": 0.0,
             },
             {
                 "metric": "Total Energy Harvested (Joules)",
@@ -118,13 +137,13 @@ class ResultExporter:
                 "Difference (SAC - PO)": round(float(sac_df["energy_harvested_wh"].sum() - po_df["energy_harvested_wh"].sum()), 4),
             },
             {
-                "metric": "Total Energy Loss (Joules)",
+                "metric": "Total Energy Deficit / Loss (Joules)",
                 "PO": round(float(po_df["energy_loss_joules"].sum()), 2),
                 "SAC": round(float(sac_df["energy_loss_joules"].sum()), 2),
                 "Difference (SAC - PO)": round(float(sac_df["energy_loss_joules"].sum() - po_df["energy_loss_joules"].sum()), 2),
             },
             {
-                "metric": "Mean Steady-State Power Ripple (W)",
+                "metric": "Mean Steady-State Perturbation Ripple (W) [Excludes Switching Ripple]",
                 "PO": round(float(po_df["steady_state_power_ripple_w"].mean()), 4),
                 "SAC": round(float(sac_df["steady_state_power_ripple_w"].mean()), 4),
                 "Difference (SAC - PO)": round(float(sac_df["steady_state_power_ripple_w"].mean() - po_df["steady_state_power_ripple_w"].mean()), 4),

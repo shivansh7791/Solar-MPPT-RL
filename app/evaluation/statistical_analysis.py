@@ -63,9 +63,15 @@ class StatisticalSummary:
     overall_mean_sac_efficiency: float
     overall_mean_po_efficiency: float
     overall_mean_efficiency_gain: float
+    overall_energy_weighted_sac_efficiency: float
+    overall_energy_weighted_po_efficiency: float
+    overall_energy_weighted_efficiency_gain: float
+    total_ideal_energy_joules: float
     total_sac_energy_harvested_joules: float
     total_po_energy_harvested_joules: float
     total_energy_gain_joules: float
+    total_sac_energy_loss_joules: float
+    total_po_energy_loss_joules: float
     category_summaries: Dict[str, Dict[str, Any]]
     notes: List[str]
 
@@ -75,15 +81,22 @@ class StatisticalSummary:
             "overall_mean_sac_efficiency": self.overall_mean_sac_efficiency,
             "overall_mean_po_efficiency": self.overall_mean_po_efficiency,
             "overall_mean_efficiency_gain": self.overall_mean_efficiency_gain,
+            "overall_energy_weighted_sac_efficiency": self.overall_energy_weighted_sac_efficiency,
+            "overall_energy_weighted_po_efficiency": self.overall_energy_weighted_po_efficiency,
+            "overall_energy_weighted_efficiency_gain": self.overall_energy_weighted_efficiency_gain,
+            "total_ideal_energy_joules": self.total_ideal_energy_joules,
             "total_sac_energy_harvested_joules": self.total_sac_energy_harvested_joules,
             "total_po_energy_harvested_joules": self.total_po_energy_harvested_joules,
             "total_energy_gain_joules": self.total_energy_gain_joules,
+            "total_sac_energy_loss_joules": self.total_sac_energy_loss_joules,
+            "total_po_energy_loss_joules": self.total_po_energy_loss_joules,
             "efficiency_difference_stats": self.efficiency_stats.to_dict(),
             "energy_difference_stats": self.energy_stats_joules.to_dict(),
             "ripple_difference_stats": self.ripple_stats_watts.to_dict(),
             "category_summaries": self.category_summaries,
             "notes": self.notes,
         }
+
 
 
 def _compute_paired_stats(
@@ -186,6 +199,19 @@ def perform_statistical_analysis(
     po_effs = np.array([r.po_metrics.tracking_efficiency for r in results], dtype=float)
     sac_energies = np.array([r.sac_metrics.energy_harvested_joules for r in results], dtype=float)
     po_energies = np.array([r.po_metrics.energy_harvested_joules for r in results], dtype=float)
+    ideal_energies = np.array([r.po_metrics.energy_ideal_joules for r in results], dtype=float)
+    sac_losses = np.array([r.sac_metrics.energy_loss_joules for r in results], dtype=float)
+    po_losses = np.array([r.po_metrics.energy_loss_joules for r in results], dtype=float)
+
+    total_ideal_energy = float(np.sum(ideal_energies))
+    total_sac_energy = float(np.sum(sac_energies))
+    total_po_energy = float(np.sum(po_energies))
+    total_sac_loss = float(np.sum(sac_losses))
+    total_po_loss = float(np.sum(po_losses))
+
+    energy_weighted_sac_eff = float((total_sac_energy / max(1e-6, total_ideal_energy)) * 100.0)
+    energy_weighted_po_eff = float((total_po_energy / max(1e-6, total_ideal_energy)) * 100.0)
+    energy_weighted_gain = float(energy_weighted_sac_eff - energy_weighted_po_eff)
 
     eff_stats = _compute_paired_stats(delta_effs, "Tracking Efficiency [%]")
     energy_stats = _compute_paired_stats(delta_energies, "Energy Harvested [Joules]")
@@ -201,17 +227,30 @@ def perform_statistical_analysis(
         cat_delta_eff = np.array([r.delta_efficiency for r in cat_results])
         cat_sac_eff = np.array([r.sac_metrics.tracking_efficiency for r in cat_results])
         cat_po_eff = np.array([r.po_metrics.tracking_efficiency for r in cat_results])
+        cat_sac_e = np.array([r.sac_metrics.energy_harvested_joules for r in cat_results])
+        cat_po_e = np.array([r.po_metrics.energy_harvested_joules for r in cat_results])
+        cat_ideal_e = np.array([r.po_metrics.energy_ideal_joules for r in cat_results])
         cat_delta_e = np.array([r.delta_energy_joules for r in cat_results])
         cat_sac_ripple = np.array([r.sac_metrics.steady_state_power_ripple_w for r in cat_results])
         cat_po_ripple = np.array([r.po_metrics.steady_state_power_ripple_w for r in cat_results])
 
+        cat_tot_ideal = float(np.sum(cat_ideal_e))
+        cat_sac_w_eff = float((np.sum(cat_sac_e) / max(1e-6, cat_tot_ideal)) * 100.0)
+        cat_po_w_eff = float((np.sum(cat_po_e) / max(1e-6, cat_tot_ideal)) * 100.0)
+
         category_summaries[cat] = {
             "n_scenarios": cat_n,
-            "mean_sac_efficiency": float(np.mean(cat_sac_eff)),
-            "mean_po_efficiency": float(np.mean(cat_po_eff)),
-            "mean_delta_efficiency": float(np.mean(cat_delta_eff)),
+            "arithmetic_mean_sac_efficiency": float(np.mean(cat_sac_eff)),
+            "arithmetic_mean_po_efficiency": float(np.mean(cat_po_eff)),
+            "arithmetic_mean_delta_efficiency": float(np.mean(cat_delta_eff)),
+            "energy_weighted_sac_efficiency": cat_sac_w_eff,
+            "energy_weighted_po_efficiency": cat_po_w_eff,
+            "energy_weighted_delta_efficiency": float(cat_sac_w_eff - cat_po_w_eff),
             "min_delta_efficiency": float(np.min(cat_delta_eff)),
             "max_delta_efficiency": float(np.max(cat_delta_eff)),
+            "total_ideal_energy_j": cat_tot_ideal,
+            "total_sac_energy_j": float(np.sum(cat_sac_e)),
+            "total_po_energy_j": float(np.sum(cat_po_e)),
             "mean_delta_energy_j": float(np.mean(cat_delta_e)),
             "mean_sac_ripple_w": float(np.mean(cat_sac_ripple)),
             "mean_po_ripple_w": float(np.mean(cat_po_ripple)),
@@ -222,6 +261,8 @@ def perform_statistical_analysis(
         "Both controllers executed on identical PV and converter plant models with exact equilibrium initial conditions.",
         "Paired difference computed as Delta = SAC - P&O.",
         "Both parametric (Student's t) and non-parametric (Wilcoxon signed-rank) tests conducted at alpha=0.05 and 0.01.",
+        "Arithmetic mean efficiency reflects unweighted scenario average.",
+        "Energy-weighted aggregate efficiency reflects total energy harvested divided by total ideal reference energy.",
     ]
 
     return StatisticalSummary(
@@ -232,9 +273,16 @@ def perform_statistical_analysis(
         overall_mean_sac_efficiency=float(np.mean(sac_effs)),
         overall_mean_po_efficiency=float(np.mean(po_effs)),
         overall_mean_efficiency_gain=float(np.mean(delta_effs)),
-        total_sac_energy_harvested_joules=float(np.sum(sac_energies)),
-        total_po_energy_harvested_joules=float(np.sum(po_energies)),
+        overall_energy_weighted_sac_efficiency=energy_weighted_sac_eff,
+        overall_energy_weighted_po_efficiency=energy_weighted_po_eff,
+        overall_energy_weighted_efficiency_gain=energy_weighted_gain,
+        total_ideal_energy_joules=total_ideal_energy,
+        total_sac_energy_harvested_joules=total_sac_energy,
+        total_po_energy_harvested_joules=total_po_energy,
         total_energy_gain_joules=float(np.sum(delta_energies)),
+        total_sac_energy_loss_joules=total_sac_loss,
+        total_po_energy_loss_joules=total_po_loss,
         category_summaries=category_summaries,
         notes=notes,
     )
+

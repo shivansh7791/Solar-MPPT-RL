@@ -63,6 +63,7 @@ results/graphs/**/*.png
 results/graphs/*.png
 results/graphs/**/*.pdf
 results/graphs/**/*.svg
+results/diagrams/*.png
 results/metrics/**/*.csv
 results/metrics/*.csv
 results/metrics/**/*.json
