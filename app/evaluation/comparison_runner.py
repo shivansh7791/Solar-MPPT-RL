@@ -178,7 +178,11 @@ class ComparisonRunner:
 
         # Set physical plant to exact equilibrium
         init_state = self.compute_equilibrium_state(converter, g_0, t_0, initial_duty)
-        meas_0 = converter.reset(initial_state=init_state)
+        meas_0 = converter.reset(
+            initial_state=init_state,
+            irradiance=g_0,
+            cell_temperature=t_0,
+        )
 
         # Reset controller
         curr_duty = float(controller.reset(

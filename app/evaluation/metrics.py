@@ -164,7 +164,8 @@ def calculate_comparison_metrics(
     else:
         tracking_eff = 0.0
 
-    e_loss_j = float(np.trapezoid(np.maximum(0.0, p_ideal - p_actual), time_arr))
+    # Physical energy deficit: difference between theoretical MPP energy available and actual energy harvested
+    e_loss_j = float(max(0.0, e_ideal_j - e_harvested_j))
     e_harvested_wh = float(e_harvested_j / 3600.0)
     e_ideal_wh = float(e_ideal_j / 3600.0)
     e_loss_wh = float(e_loss_j / 3600.0)

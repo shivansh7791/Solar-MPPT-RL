@@ -153,7 +153,9 @@ class BoostConverter:
 
     def reset(
         self,
-        initial_state: Optional[Tuple[float, float, float]] = None,
+        initial_state: Optional[Union[np.ndarray, List[float], Tuple[float, ...]]] = None,
+        irradiance: float = 1000.0,
+        cell_temperature: float = 25.0,
     ) -> ConverterMeasurements:
         """Reset the converter state vector and simulation time.
 
@@ -161,11 +163,15 @@ class BoostConverter:
         ----------
         initial_state : Optional[Tuple[float, float, float]], optional
             Initial state vector (V_pv, i_L, V_out). If None, defaults to config initial state.
+        irradiance : float, optional
+            Environmental irradiance for initial measurement [W/m^2] (default 1000.0).
+        cell_temperature : float, optional
+            Environmental cell temperature for initial measurement [°C] (default 25.0).
 
         Returns
         -------
         ConverterMeasurements
-            Measurements evaluated at the reset state.
+            Measurements evaluated at the reset state and ambient conditions.
         """
         self.time = 0.0
         if initial_state is not None:
@@ -184,7 +190,7 @@ class BoostConverter:
         self._last_duty = float(self.config.duty_cycle_init)
 
         logger.debug(f"Reset BoostConverter state to: Vpv={self.state[0]:.2f}V, iL={self.state[1]:.2f}A, Vout={self.state[2]:.2f}V")
-        return self.get_measurements(irradiance=1000.0, cell_temperature=25.0)
+        return self.get_measurements(irradiance=irradiance, cell_temperature=cell_temperature)
 
     def _calculate_stored_energy(self, state: np.ndarray) -> float:
         """Calculate total reactive stored energy E = 0.5*Cpv*Vpv^2 + 0.5*L*iL^2 + 0.5*Cout*Vout^2 [J]."""

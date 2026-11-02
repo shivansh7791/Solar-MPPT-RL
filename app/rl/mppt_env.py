@@ -221,7 +221,11 @@ class SolarMPPTEnv(gym.Env):
         # where dV_pv/dt = di_L/dt = dV_out/dt = 0
         init_state = self.compute_equilibrium_state(g_0, t_0, self.current_duty, ref_mpp=ref_mpp)
 
-        meas = self.converter.reset(initial_state=init_state)
+        meas = self.converter.reset(
+            initial_state=init_state,
+            irradiance=g_0,
+            cell_temperature=t_0,
+        )
 
         # Reset processors
         self.obs_processor.reset(initial_voltage=meas.v_pv, initial_power=meas.p_pv)

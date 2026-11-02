@@ -240,6 +240,9 @@ def perform_statistical_analysis(
 
         category_summaries[cat] = {
             "n_scenarios": cat_n,
+            "mean_sac_efficiency": float(np.mean(cat_sac_eff)),
+            "mean_po_efficiency": float(np.mean(cat_po_eff)),
+            "mean_delta_efficiency": float(np.mean(cat_delta_eff)),
             "arithmetic_mean_sac_efficiency": float(np.mean(cat_sac_eff)),
             "arithmetic_mean_po_efficiency": float(np.mean(cat_po_eff)),
             "arithmetic_mean_delta_efficiency": float(np.mean(cat_delta_eff)),
