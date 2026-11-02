@@ -9,6 +9,7 @@ from config.default_config import (
     ProjectPaths,
     PVConfig,
     RLConfig,
+    RLEnvConfig,
     SimulationConfig,
     get_default_config,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "ProjectPaths",
     "PVConfig",
     "RLConfig",
+    "RLEnvConfig",
     "SimulationConfig",
     "get_default_config",
 ]

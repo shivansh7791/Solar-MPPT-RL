@@ -44,6 +44,11 @@ def parse_args() -> argparse.Namespace:
         help="Simulate closed-loop Perturb & Observe (P&O) MPPT controller under STC.",
     )
     parser.add_argument(
+        "--validate-env",
+        action="store_true",
+        help="Validate custom Gymnasium Solar MPPT environment and run baseline benchmark.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -185,7 +190,13 @@ def main() -> int:
         plot_paths = generate_all_phase_4_plots(df, output_dir=plots_dir)
         logger.info(f"Generated {len(plot_paths)} P&O controller plots in: {plots_dir}")
 
-    logger.info("Operational status: PHASE 4 PERTURB & OBSERVE (P&O) MPPT CONTROLLER OPERATIONAL.")
+    if args.validate_env:
+        from examples.validate_rl_environment import main as run_env_validation
+
+        logger.info("Executing Phase 5 Custom Gymnasium RL Environment Validation...")
+        run_env_validation()
+
+    logger.info("Operational status: PHASE 5 CUSTOM GYMNASIUM SOLAR MPPT ENVIRONMENT OPERATIONAL.")
     return 0
 
 

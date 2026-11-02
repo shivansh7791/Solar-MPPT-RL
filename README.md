@@ -269,9 +269,15 @@ pytest
   - Five standardized engineering experiments (STC, irradiance steps, temperature steps, step sizes, initial duty sensitivity).
   - 10 publication-quality figures ($300\text{ DPI}$) in `results/graphs/phase_4/` and CSV exports in `results/metrics/`.
   - Comprehensive test suite (57 new tests passing, 159/159 total tests passing repository-wide).
-- [ ] **Phase 5: Gymnasium MPPT Simulation Environment**
-  - Gymnasium MDP formulation: state observation space, action bounds, step physics integration.
-  - Continuous reward engineering balancing tracking accuracy and duty cycle actuation stability.
+- [x] **Phase 5: Gymnasium MPPT Simulation Environment** (Completed)
+  - Custom Gymnasium MDP environment `SolarMPPTEnv(gymnasium.Env)` in `app/rl/mppt_env.py`.
+  - Normalized continuous observation space (10-dim privileged / 8-dim realistic) in `app/rl/observations.py`.
+  - Continuous incremental action space ($a \in [-1, 1] \implies \Delta D = a \cdot \Delta D_{max}$) in `[-1.0, 1.0]`.
+  - Configurable reward calculator (`HybridTrackingReward`, `NormalizedPowerReward`, `PowerDeltaReward`) in `app/rl/reward.py`.
+  - Atmospheric episode profile generator (STC, random constant, irradiance steps, temperature steps, combined) in `app/rl/episode_profiles.py`.
+  - Gymnasium official checker and Stable-Baselines3 compatibility verification (`Monitor` wrapper, SAC action compatibility).
+  - Validation script `examples/validate_rl_environment.py`, 5 publication-quality figures ($300\text{ DPI}$) in `results/graphs/phase_5/`, and CSV/JSON metrics in `results/metrics/phase_5/`.
+  - 47 new unit/integration tests passing (206/206 total tests passing repository-wide).
 - [ ] **Phase 6: Reinforcement Learning MPPT Controller (SAC)**
   - Soft Actor-Critic policy configuration and training pipeline.
   - Hyperparameter tuning, policy evaluation, and model checkpointing.
@@ -295,12 +301,12 @@ pytest
 | PV Characteristics & MPP Analysis | Phase 2 | **Implemented** | I-V/P-V analysis, 8 graphs in `results/graphs/`, 42/42 tests passing |
 | DC-DC Boost Converter Model | Phase 3 | **Implemented** | State-space averaged RK4 plant, 8 graphs in `results/graphs/phase_3/`, 60 converter tests passing |
 | Perturb & Observe (P&O) MPPT | Phase 4 | **Implemented** | Inverse sign rule, multirate closed loop, 10 graphs, 159/159 total tests passing |
-| Gymnasium Environment | Phase 5 | *Planned* | Reserved for Phase 5 |
+| Gymnasium Environment | Phase 5 | **Implemented** | `SolarMPPTEnv`, Gymnasium/SB3 compatible, 5 graphs, 206/206 total tests passing |
 | SAC RL MPPT Controller | Phase 6 | *Planned* | Reserved for Phase 6 |
 | Comparative Benchmarks | Phase 7 | *Planned* | Reserved for Phase 7 |
 | Streamlit Web Dashboard | Phase 8 | *Planned* | Reserved for Phase 8 |
 
 > [!NOTE]
-> In accordance with Phase 4 scope restrictions, Gymnasium RL environment wrappers, SAC/PPO neural network agents, reward engineering, and Streamlit dashboard are strictly deferred to future phases.
+> In accordance with Phase 5 scope restrictions, SAC neural network training, policy optimization, hyperparameter tuning, and Streamlit dashboard are strictly deferred to future phases.
 
 

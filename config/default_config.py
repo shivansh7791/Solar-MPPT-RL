@@ -174,16 +174,69 @@ class MPPTConfig:
 
 
 @dataclass
-class EnvironmentConfig:
-    """Placeholder configuration schema for the Gymnasium RL Environment.
+class RLEnvConfig:
+    """Configuration for Custom Gymnasium Solar MPPT Environment.
 
-    State observation features, action scaling, and reward functions will be
-    formalized in Phase 4.
+    Defines action limits, control timing, observation scaling, reward weights,
+    initial condition randomization, and safety thresholds for the Gymnasium environment.
     """
 
-    max_steps_per_episode: int = 1000
-    action_type: str = "continuous"  # Continuous delta-duty or absolute duty
+    # Timing & Steps
+    control_interval: float = 0.005  # RL control step T_RL = 5 ms (50 plant integration steps)
+    max_steps_per_episode: int = 300  # 300 steps * 5 ms = 1.5 s episode duration
+
+    # Action Space & Slew Limits
+    action_min: float = -1.0
+    action_max: float = 1.0
+    delta_duty_max: float = 0.01  # Maximum duty adjustment per step: Delta D = a * delta_duty_max
+    duty_min: float = 0.05  # Converter physical saturation bounds
+    duty_max: float = 0.90
+
+    # Initial State Randomization
+    randomize_initial_duty: bool = True
+    initial_duty_min: float = 0.20
+    initial_duty_max: float = 0.60
+    initial_duty_default: float = 0.35  # Deterministic STC starting duty
+
+    # Environmental Randomization & Range
+    randomize_environment: bool = False
+    profile_type: str = "stc"  # 'stc', 'random_constant', 'irradiance_step', 'temperature_step', 'combined'
+    irradiance_min: float = 400.0  # W/m^2
+    irradiance_max: float = 1000.0
+    temperature_min: float = 15.0  # °C
+    temperature_max: float = 55.0
+
+    # Observation Space & Normalization Scales
+    include_mpp_in_obs: bool = True  # If True: 10-dim privileged obs; If False: 8-dim realistic obs
+    v_scale: float = 45.0  # PV voltage scale [V] (V_oc ~ 37V)
+    i_scale: float = 10.0  # PV current scale [A] (I_sc ~ 8.6A)
+    p_scale: float = 300.0  # PV power scale [W] (P_mp ~ 240W)
+    delta_v_scale: float = 5.0  # Delta V scale [V]
+    delta_p_scale: float = 50.0  # Delta P scale [W]
+    g_scale: float = 1000.0  # Irradiance scale [W/m^2]
+    t_ref: float = 25.0  # Reference temperature [°C]
+    t_scale: float = 50.0  # Temperature scale [°C]
+    obs_clip_min: float = -2.0
+    obs_clip_max: float = 2.0
+
+    # Reward Function Settings
+    reward_type: str = "hybrid_tracking"  # 'hybrid_tracking', 'normalized_power', 'power_delta'
+    weight_power: float = 1.0  # w_p: linear power extraction weight
+    weight_tracking_error: float = 2.0  # w_e: quadratic tracking error penalty weight
+    weight_action_penalty: float = 0.05  # w_d: control effort penalty weight
+    epsilon_power: float = 1e-4  # Epsilon to prevent division by zero [W]
+    fault_penalty: float = 10.0  # Penalty applied upon numerical or physical safety violation
+
+    # Safety Thresholds
+    max_output_voltage: float = 120.0  # Extreme over-voltage termination threshold [V]
+
+    # Legacy compatibility fields
+    action_type: str = "continuous"
     custom_params: Dict[str, Any] = field(default_factory=dict)
+
+
+# Type alias for EnvironmentConfig to maintain backward compatibility
+EnvironmentConfig = RLEnvConfig
 
 
 @dataclass
