@@ -54,6 +54,11 @@ def parse_args() -> argparse.Namespace:
         help="Train Soft Actor-Critic (SAC) reinforcement learning MPPT agent.",
     )
     parser.add_argument(
+        "--compare-mppt",
+        action="store_true",
+        help="Execute Phase 7 comparative performance study between Classical P&O and Trained SAC MPPT controllers.",
+    )
+    parser.add_argument(
         "--timesteps",
         type=int,
         default=None,
@@ -248,7 +253,63 @@ def main() -> int:
             f"({summary['throughput_steps_per_second']} steps/s). Best Tracking Eff: {summary['best_tracking_efficiency_achieved']}%"
         )
 
-    logger.info("Operational status: PHASE 6 SOFT ACTOR-CRITIC (SAC) MPPT CONTROLLER OPERATIONAL.")
+    if args.compare_mppt:
+        from pathlib import Path
+        from app.evaluation.comparison_runner import ComparisonRunner
+        from app.evaluation.controller_adapters import POControllerAdapter, SACControllerAdapter
+        from app.evaluation.result_exporter import ResultExporter
+        from app.evaluation.scenario_manager import ScenarioManager, create_standard_scenarios
+        from app.evaluation.statistical_analysis import perform_statistical_analysis
+        from app.evaluation.visualization import generate_all_phase_7_plots
+        from app.rl.sac_agent import load_sac_agent
+
+        logger.info("================================================================================")
+        logger.info("STARTING PHASE 7: MPPT COMPARATIVE PERFORMANCE EVALUATION (SAC vs Classical P&O)")
+        logger.info("================================================================================")
+
+        model_path = config.paths.root_dir / "artifacts/rl/realistic/best_model/best_mppt_model.zip"
+        if not model_path.is_file():
+            model_path = config.paths.root_dir / "artifacts/rl/realistic/final_model/sac_mppt_final.zip"
+
+        if not model_path.is_file():
+            logger.error(f"Cannot run Phase 7: No trained realistic SAC model found at {model_path}")
+            return 1
+
+        logger.info(f"Loading trained realistic SAC model from: {model_path}")
+        sac_model = load_sac_agent(model_path, device="cpu")
+
+        po_adapter = POControllerAdapter(config=config.mppt.po)
+        sac_adapter = SACControllerAdapter(model=sac_model)
+
+        scenarios = create_standard_scenarios()
+        manager = ScenarioManager(scenarios)
+        logger.info(f"Initialized {len(manager)} standardized evaluation scenarios.")
+
+        runner = ComparisonRunner(config=config)
+        paired_results = runner.run_all_scenarios(manager, po_adapter, sac_adapter)
+
+        logger.info("Performing formal statistical hypothesis testing...")
+        stats_summary = perform_statistical_analysis(paired_results)
+
+        metrics_out = config.paths.metrics_dir / "phase_7"
+        exporter = ResultExporter(metrics_out)
+        export_paths = exporter.export_all(manager, paired_results, stats_summary)
+
+        graphs_out = config.paths.graphs_dir / "phase_7"
+        plot_paths = generate_all_phase_7_plots(paired_results, stats_summary, graphs_out)
+
+        logger.info("================================================================================")
+        logger.info("PHASE 7 COMPARATIVE STUDY COMPLETE")
+        logger.info("================================================================================")
+        logger.info(f"Overall Mean Tracking Efficiency: SAC = {stats_summary.overall_mean_sac_efficiency:.2f}% | P&O = {stats_summary.overall_mean_po_efficiency:.2f}% (Gain: {stats_summary.overall_mean_efficiency_gain:+.2f}%)")
+        logger.info(f"Total Energy Extracted across 19 Scenarios: SAC = {stats_summary.total_sac_energy_harvested_joules:.1f} J | P&O = {stats_summary.total_po_energy_harvested_joules:.1f} J (Net Gain: {stats_summary.total_energy_gain_joules:+.1f} J)")
+        logger.info(f"Paired t-test on Efficiency Gain: t = {stats_summary.efficiency_stats.t_statistic:.3f}, p = {stats_summary.efficiency_stats.t_test_p_value:.3e} (Significant: {stats_summary.efficiency_stats.is_statistically_significant_05})")
+        logger.info(f"Wilcoxon Signed-Rank test: W = {stats_summary.efficiency_stats.wilcoxon_statistic:.1f}, p = {stats_summary.efficiency_stats.wilcoxon_p_value:.3e}")
+        logger.info(f"Steady-State Power Ripple: SAC Mean = {stats_summary.ripple_stats_watts.mean_difference + stats_summary.category_summaries['A_STC']['mean_po_ripple_w']:.4f} W vs P&O Mean = {stats_summary.category_summaries['A_STC']['mean_po_ripple_w']:.4f} W")
+        logger.info(f"Exported metrics: {metrics_out}")
+        logger.info(f"Generated 14 publication figures: {graphs_out}")
+
+    logger.info("Operational status: PHASE 7 MPPT CONTROLLER COMPARATIVE STUDY OPERATIONAL.")
     return 0
 
 
