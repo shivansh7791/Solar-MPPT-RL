@@ -49,6 +49,35 @@ def parse_args() -> argparse.Namespace:
         help="Validate custom Gymnasium Solar MPPT environment and run baseline benchmark.",
     )
     parser.add_argument(
+        "--train-sac",
+        action="store_true",
+        help="Train Soft Actor-Critic (SAC) reinforcement learning MPPT agent.",
+    )
+    parser.add_argument(
+        "--timesteps",
+        type=int,
+        default=None,
+        help="Total training timesteps for SAC agent.",
+    )
+    parser.add_argument(
+        "--rl-mode",
+        type=str,
+        default="realistic",
+        choices=["realistic", "privileged"],
+        help="SAC observation mode: realistic (8-dim) or privileged (10-dim with MPP reference).",
+    )
+    parser.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Run short 2,000 timestep SAC training smoke test.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for reproducibility.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -196,7 +225,30 @@ def main() -> int:
         logger.info("Executing Phase 5 Custom Gymnasium RL Environment Validation...")
         run_env_validation()
 
-    logger.info("Operational status: PHASE 5 CUSTOM GYMNASIUM SOLAR MPPT ENVIRONMENT OPERATIONAL.")
+    if args.train_sac:
+        from app.rl.sac_config import SACConfig
+        from app.rl.training import run_sac_training
+
+        steps = 2_000 if args.smoke_test else (args.timesteps if args.timesteps is not None else 100_000)
+        s_cfg = SACConfig(
+            total_timesteps=steps,
+            seed=args.seed,
+            learning_starts=min(2_000, max(100, steps // 10)),
+        )
+
+        logger.info(f"Executing Phase 6 SAC Agent Training ({steps:,} steps, mode={args.rl_mode})...")
+        summary = run_sac_training(
+            sac_config=s_cfg,
+            master_config=config,
+            mode=args.rl_mode,
+            seed=args.seed,
+        )
+        logger.info(
+            f"Phase 6 SAC Training Complete: {summary['total_timesteps_completed']:,} steps in {summary['duration_seconds']}s "
+            f"({summary['throughput_steps_per_second']} steps/s). Best Tracking Eff: {summary['best_tracking_efficiency_achieved']}%"
+        )
+
+    logger.info("Operational status: PHASE 6 SOFT ACTOR-CRITIC (SAC) MPPT CONTROLLER OPERATIONAL.")
     return 0
 
 

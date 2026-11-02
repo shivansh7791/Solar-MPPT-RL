@@ -53,6 +53,9 @@ data/models/*.pt
 data/models/*.pth
 data/models/*.onnx
 !data/models/.gitkeep
+artifacts/
+*.pdf
+
 
 # Generated experiment artifacts & large log outputs
 results/experiment_logs/**/*.log

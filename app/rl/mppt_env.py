@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 import gymnasium as gym
 import gymnasium.spaces as spaces
 import numpy as np
+from scipy.optimize import brentq
 
 from app.converter.boost_converter import BoostConverter, ConverterMeasurements
 from app.pv.pv_model import PVOutput, SolarPVModel
@@ -130,6 +131,38 @@ class SolarMPPTEnv(gym.Env):
             self._mpp_cache[key] = self.pv_model.calculate(key[0], key[1])
         return self._mpp_cache[key]
 
+    def compute_equilibrium_state(
+        self,
+        irradiance: float,
+        cell_temperature: float,
+        duty_cycle: float,
+        ref_mpp: Optional[PVOutput] = None,
+    ) -> Tuple[float, float, float]:
+        """Compute exact physical equilibrium state vector (V_pv*, i_L*, V_out*) where all derivatives are 0.
+
+        Solves V_pv = R_in(D) * I_pv(V_pv, G, T) where R_in(D) = (1 - D)^2 * R_load + r_L.
+        """
+        d = float(duty_cycle)
+        r_in = ((1.0 - d) ** 2) * self.converter.R_load + self.converter.r_L
+        v_oc = ref_mpp.v_oc if ref_mpp is not None else self._get_mpp(irradiance, cell_temperature).v_oc
+
+        def residual(v: float) -> float:
+            i_pv = self.pv_model.current_at_voltage(v, irradiance, cell_temperature, clip_non_negative=True)
+            return v - r_in * i_pv
+
+        try:
+            v_pv_star = float(brentq(residual, 0.0, v_oc * 1.05))
+            i_l_star = float(self.pv_model.current_at_voltage(v_pv_star, irradiance, cell_temperature, clip_non_negative=True))
+            v_out_star = float((1.0 - d) * self.converter.R_load * i_l_star)
+            return v_pv_star, i_l_star, v_out_star
+        except Exception as e:
+            logger.warning(f"Equilibrium root-finding failed ({e}), falling back to heuristic initialization.")
+            mpp = ref_mpp if ref_mpp is not None else self._get_mpp(irradiance, cell_temperature)
+            v_pv_h = float(mpp.v_mp)
+            i_l_h = float(mpp.i_mp)
+            v_out_h = float(v_pv_h / max(0.1, 1.0 - d))
+            return v_pv_h, i_l_h, v_out_h
+
     def reset(
         self,
         *,
@@ -184,12 +217,9 @@ class SolarMPPTEnv(gym.Env):
         # Query reference MPP at initial condition
         ref_mpp = self._get_mpp(g_0, t_0)
 
-        # Initialize converter state near equilibrium to avoid violent startup shocks
-        # V_pv ~ V_mp, i_L ~ I_mp, V_out ~ V_mp / (1 - D)
-        v_pv_init = float(ref_mpp.v_mp)
-        i_l_init = float(ref_mpp.i_mp)
-        v_out_init = float(v_pv_init / max(0.1, 1.0 - self.current_duty))
-        init_state = (v_pv_init, i_l_init, v_out_init)
+        # Initialize converter state at exact physical equilibrium for (g_0, t_0, current_duty)
+        # where dV_pv/dt = di_L/dt = dV_out/dt = 0
+        init_state = self.compute_equilibrium_state(g_0, t_0, self.current_duty, ref_mpp=ref_mpp)
 
         meas = self.converter.reset(initial_state=init_state)
 
