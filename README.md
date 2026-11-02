@@ -219,6 +219,13 @@ python examples/boost_converter_demo.py
 python main.py --simulate-converter
 ```
 
+### Execute Closed-Loop Perturb & Observe (P&O) MPPT Simulation (Phase 4)
+```bash
+python examples/po_controller_demo.py
+# or via CLI flag:
+python main.py --simulate-po
+```
+
 ### Execute Full Test Suite
 ```bash
 pytest
@@ -247,16 +254,21 @@ pytest
   - Publication-quality visualization suite generating 8 scientific figures (`app/pv/pv_visualization.py`).
   - Metrics export to CSV (`results/metrics/phase_2_mpp_analysis.csv`) and technical analysis (`docs/PHASE_2_ANALYSIS.md`).
   - Comprehensive unit test suite (42/42 tests passing).
-- [x] **Phase 3: DC-DC Boost Converter Modeling & Simulation** (Completed)
+- [x] **Phase 3: DC-DC Boost Converter Modeling & Simulation**
   - Mathematical formulation of state-space averaged differential equations in CCM (`docs/PHASE_3_THEORY.md`).
   - Inductor, input capacitor, output capacitor, and load resistor physical sizing ($L=1\text{ mH}, C_{pv}=470\ \mu\text{F}, C_{out}=470\ \mu\text{F}, R_{load}=10\ \Omega$).
   - 4th-order Runge-Kutta (RK4) numerical integration engine with coupled physical PV current injection.
   - Instantaneous power conservation ($\int (P_{in} - P_{out} - P_{loss}) dt \approx \Delta E$, error $< 0.05\%$) and CCM verification ($i_L > 0$).
   - Publication-quality transient visualization suite generating 8 scientific figures (`results/graphs/phase_3/`).
   - Comprehensive unit test suite (60/60 converter tests passing, 102/102 project tests passing).
-- [ ] **Phase 4: Classical Perturb & Observe (P&O) MPPT Controller**
-  - Classical P&O algorithm with configurable perturbation step ($\Delta d$) and sampling rate.
-  - Steady-state oscillation and dynamic ramp response evaluation.
+- [x] **Phase 4: Classical Perturb & Observe (P&O) MPPT Controller** (Completed)
+  - Mathematical derivation of boost converter inverse sign rule ($\Delta D = -\delta \cdot \operatorname{sgn}(\Delta P \cdot \Delta V)$) in `docs/PHASE_4_THEORY.md`.
+  - Implementation of `PerturbAndObserveController` with saturation clamping, deadbands, and diagnostics (`app/controllers/po_controller.py`).
+  - Multirate closed-loop simulation runner `MPPTSimulator` ($dt_{conv} = 100\ \mu\text{s}, T_{mppt} = 5\text{ ms}$) in `app/controllers/mppt_simulation.py`.
+  - Quantitative performance evaluation metrics (`MPPTMetrics` and `calculate_mppt_metrics`) in `app/controllers/mppt_metrics.py`.
+  - Five standardized engineering experiments (STC, irradiance steps, temperature steps, step sizes, initial duty sensitivity).
+  - 10 publication-quality figures ($300\text{ DPI}$) in `results/graphs/phase_4/` and CSV exports in `results/metrics/`.
+  - Comprehensive test suite (57 new tests passing, 159/159 total tests passing repository-wide).
 - [ ] **Phase 5: Gymnasium MPPT Simulation Environment**
   - Gymnasium MDP formulation: state observation space, action bounds, step physics integration.
   - Continuous reward engineering balancing tracking accuracy and duty cycle actuation stability.
@@ -281,14 +293,14 @@ pytest
 | Automated Smoke Testing | Phase 0 | **Implemented** | Pytest verification passing (5/5 smoke tests) |
 | PV Cell / Array Physics Model | Phase 1 | **Implemented** | `SolarPVModel` verified (<0.001% STC error, 27/27 tests passing) |
 | PV Characteristics & MPP Analysis | Phase 2 | **Implemented** | I-V/P-V analysis, 8 graphs in `results/graphs/`, 42/42 tests passing |
-| DC-DC Boost Converter Model | Phase 3 | **Implemented** | State-space averaged RK4 plant, 8 graphs in `results/graphs/phase_3/`, 102/102 total tests passing |
-| Perturb & Observe (P&O) MPPT | Phase 4 | *Planned* | Reserved for Phase 4 |
+| DC-DC Boost Converter Model | Phase 3 | **Implemented** | State-space averaged RK4 plant, 8 graphs in `results/graphs/phase_3/`, 60 converter tests passing |
+| Perturb & Observe (P&O) MPPT | Phase 4 | **Implemented** | Inverse sign rule, multirate closed loop, 10 graphs, 159/159 total tests passing |
 | Gymnasium Environment | Phase 5 | *Planned* | Reserved for Phase 5 |
 | SAC RL MPPT Controller | Phase 6 | *Planned* | Reserved for Phase 6 |
 | Comparative Benchmarks | Phase 7 | *Planned* | Reserved for Phase 7 |
 | Streamlit Web Dashboard | Phase 8 | *Planned* | Reserved for Phase 8 |
 
 > [!NOTE]
-> In accordance with Phase 3 scope restrictions, MPPT algorithms (P&O/IncCond), Gymnasium RL environment wrappers, and neural network agents are strictly deferred to their designated future phases.
+> In accordance with Phase 4 scope restrictions, Gymnasium RL environment wrappers, SAC/PPO neural network agents, reward engineering, and Streamlit dashboard are strictly deferred to future phases.
 
 

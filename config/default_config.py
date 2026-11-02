@@ -128,15 +128,48 @@ class ConverterConfig:
 
 
 @dataclass
-class MPPTConfig:
-    """Placeholder configuration schema for MPPT controllers.
+class POConfig:
+    """Configuration for Classical Perturb & Observe (P&O) MPPT Controller.
 
-    Perturb & Observe step sizes and sampling frequencies will be defined in Phase 3.
+    Parameters
+    ----------
+    initial_duty : float
+        Initial duty cycle D_0 commanded at start of control [0.05, 0.90].
+    duty_min : float
+        Minimum permitted duty cycle saturation bound.
+    duty_max : float
+        Maximum permitted duty cycle saturation bound.
+    perturbation_step : float
+        Fixed duty cycle perturbation increment delta_D (e.g. 0.002).
+    sampling_interval : float
+        MPPT control update period T_mppt [s] (e.g. 0.005 s = 5 ms).
+    power_deadband : float
+        Minimum absolute power change |Delta P| required to trigger perturbation [W].
+    voltage_deadband : float
+        Minimum absolute voltage change |Delta V| required to trigger perturbation [V].
+    simulation_duration : float
+        Standard duration for P&O simulation runs [s].
     """
 
+    initial_duty: float = 0.35  # Off-MPP starting point to test convergence towards 0.3939
+    duty_min: float = 0.05
+    duty_max: float = 0.90
+    perturbation_step: float = 0.002
+    sampling_interval: float = 0.005  # 5 ms (50 converter integration steps)
+    power_deadband: float = 0.0
+    voltage_deadband: float = 0.0
+    simulation_duration: float = 1.5
+    custom_params: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class MPPTConfig:
+    """Configuration schema for MPPT controllers."""
+
     algorithm: str = "PO"  # 'PO', 'RL_SAC', etc.
-    sampling_interval: float = 1e-3  # Control loop interval [seconds]
-    delta_duty: float = 0.01  # Perturbation step for P&O
+    sampling_interval: float = 0.005  # Default control loop interval [seconds] (5 ms)
+    delta_duty: float = 0.002  # Perturbation step for P&O
+    po: POConfig = field(default_factory=POConfig)
     custom_params: Dict[str, Any] = field(default_factory=dict)
 
 

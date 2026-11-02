@@ -2,5 +2,8 @@
 
 Responsible for baseline MPPT controllers (e.g., Perturb & Observe)
 and Reinforcement Learning policy deployment interfaces.
-(Implementation reserved for Phase 3 and Phase 5).
 """
+
+from app.controllers.po_controller import PerturbAndObserveController, PODiagnostics
+
+__all__ = ["PerturbAndObserveController", "PODiagnostics"]

@@ -39,6 +39,11 @@ def parse_args() -> argparse.Namespace:
         help="Simulate DC-DC boost converter dynamic response to duty cycle step.",
     )
     parser.add_argument(
+        "--simulate-po",
+        action="store_true",
+        help="Simulate closed-loop Perturb & Observe (P&O) MPPT controller under STC.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -149,7 +154,38 @@ def main() -> int:
         plot_paths = generate_all_phase_3_plots(df, output_dir=plots_dir)
         logger.info(f"Generated {len(plot_paths)} converter transient plots in: {plots_dir}")
 
-    logger.info("Operational status: PHASE 3 DC-DC BOOST CONVERTER MODELLING & SIMULATION OPERATIONAL.")
+    if args.simulate_po:
+        from app.controllers.controller_visualization import generate_all_phase_4_plots
+        from app.controllers.mppt_metrics import calculate_mppt_metrics
+        from app.controllers.mppt_simulation import MPPTSimulator
+
+        logger.info("Executing Phase 4 Perturb & Observe (P&O) MPPT Simulation...")
+        sim = MPPTSimulator(config=config)
+        df = sim.run(duration=1.5, irradiance=1000.0, cell_temperature=25.0, initial_duty=0.35)
+        metrics = calculate_mppt_metrics(df, pv_model=sim.pv_model)
+
+        csv_path = config.paths.metrics_dir / "phase_4_po_simulation.csv"
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(csv_path, index=False)
+        logger.info(f"Saved {len(df)} MPPT simulation steps to: {csv_path}")
+
+        logger.info("Phase 4 P&O MPPT Performance Metrics (STC):")
+        logger.info(f"  Tracking Efficiency (eta_MPPT): {metrics.tracking_efficiency:.2f} %")
+        logger.info(f"  Settling Time (2% band): {metrics.settling_time:.4f} s | Converged: {metrics.is_converged}")
+        logger.info(f"  Extracted Power: {metrics.final_p_pv:.2f} W | Reference P_MPP: {metrics.final_p_mpp:.2f} W")
+        logger.info(f"  Final Duty Cycle: {metrics.final_duty_cycle:.4f} | Theoretical D*: 0.3939")
+        logger.info(
+            f"  Steady-State Power: {metrics.steady_state_power_mean:.2f} W | "
+            f"Std: {metrics.steady_state_power_std:.3f} W | Ripple: {metrics.steady_state_power_ripple:.3f} W"
+        )
+        logger.info(f"  Mean Converter Efficiency: {metrics.mean_converter_efficiency:.2f} %")
+        logger.info(f"  MPPT Controller Updates: {metrics.total_controller_updates} | Saturation Events: {metrics.total_saturation_events}")
+
+        plots_dir = config.paths.graphs_dir / "phase_4"
+        plot_paths = generate_all_phase_4_plots(df, output_dir=plots_dir)
+        logger.info(f"Generated {len(plot_paths)} P&O controller plots in: {plots_dir}")
+
+    logger.info("Operational status: PHASE 4 PERTURB & OBSERVE (P&O) MPPT CONTROLLER OPERATIONAL.")
     return 0
 
 
