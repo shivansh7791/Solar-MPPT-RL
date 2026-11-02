@@ -1,0 +1,71 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python byte-code and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.hypothesis/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# IDE and Editor configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Large model checkpoints and weights
+data/models/*.zip
+data/models/*.pt
+data/models/*.pth
+data/models/*.onnx
+!data/models/.gitkeep
+
+# Generated experiment artifacts & large log outputs
+results/experiment_logs/*.log
+results/graphs/*.png
+results/graphs/*.pdf
+results/graphs/*.svg
+results/metrics/*.csv
+results/metrics/*.json
+!results/experiment_logs/.gitkeep
+!results/graphs/.gitkeep
+!results/metrics/.gitkeep
+!data/profiles/.gitkeep
+
+# Environment variables
+.env
+.env.local

@@ -1,0 +1,22 @@
+# ==============================================================================
+# RL-Based Solar MPPT Project Dependencies
+# ==============================================================================
+
+# Core Numerical & Physical Modeling
+numpy>=2.0.0
+scipy>=1.15.0
+pandas>=2.2.0
+pvlib>=0.11.0
+
+# Reinforcement Learning & Deep Learning
+torch>=2.5.0
+gymnasium>=1.0.0
+stable-baselines3>=2.4.0
+
+# Visualization & Dashboard
+matplotlib>=3.9.0
+plotly>=6.0.0
+streamlit>=1.40.0
+
+# Testing & Quality Assurance (Development)
+pytest>=8.0.0
