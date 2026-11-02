@@ -327,6 +327,94 @@ class SolarPVModel:
             temperature=t_cell,
         )
 
+    def current_at_voltage(
+        self,
+        voltage: Union[float, np.ndarray],
+        irradiance: float,
+        cell_temperature: float,
+        clip_non_negative: bool = True,
+    ) -> Union[float, np.ndarray]:
+        """Calculate terminal current at given voltage(s) for specified environmental conditions.
+
+        Parameters
+        ----------
+        voltage : Union[float, np.ndarray]
+            Terminal voltage [V]. May be a scalar or 1D NumPy array.
+        irradiance : float
+            Incident effective solar irradiance [W/m^2].
+        cell_temperature : float
+            Operating cell junction temperature [°C].
+        clip_non_negative : bool, optional
+            If True, clips negative currents beyond Voc to zero to represent the
+            generator quadrant (Quadrant I). By default True.
+
+        Returns
+        -------
+        Union[float, np.ndarray]
+            Terminal output current [A]. Returns scalar float if voltage is scalar,
+            or NumPy array if voltage is array-like.
+        """
+        is_scalar = np.isscalar(voltage)
+        v_arr = np.atleast_1d(np.asarray(voltage, dtype=float))
+
+        # Check for NaN in input voltages
+        if np.any(np.isnan(v_arr)):
+            raise TypeError("Voltage array contains NaN values.")
+
+        g = float(irradiance)
+        t_cell = float(cell_temperature)
+
+        if g < 0.0:
+            raise ValueError(f"Irradiance cannot be negative. Received: {g} W/m^2")
+        if g > MAX_SUPPORTED_IRRADIANCE:
+            raise ValueError(
+                f"Irradiance {g} W/m^2 exceeds upper terrestrial limit ({MAX_SUPPORTED_IRRADIANCE} W/m^2)."
+            )
+        if t_cell < -273.15:
+            raise ValueError(
+                f"Cell temperature {t_cell}°C is below absolute zero (-273.15°C)."
+            )
+        if t_cell < MIN_SUPPORTED_TEMP_C or t_cell > MAX_SUPPORTED_TEMP_C:
+            raise ValueError(
+                f"Cell temperature {t_cell}°C is outside supported operational bounds "
+                f"[{MIN_SUPPORTED_TEMP_C}°C, {MAX_SUPPORTED_TEMP_C}°C]."
+            )
+
+        # Zero irradiance condition: darkness produces zero generated current
+        if g == 0.0:
+            res = np.zeros_like(v_arr)
+            return float(res[0]) if is_scalar else res
+
+        # Obtain translated single-diode parameters
+        i_l, i_o, r_s, r_sh, a_mod = pvlib.pvsystem.calcparams_cec(
+            effective_irradiance=g,
+            temp_cell=t_cell,
+            alpha_sc=self._cec_params["alpha_sc"],
+            a_ref=self._cec_params["a_ref"],
+            I_L_ref=self._cec_params["I_L_ref"],
+            I_o_ref=self._cec_params["I_o_ref"],
+            R_sh_ref=self._cec_params["R_sh_ref"],
+            R_s=self._cec_params["R_s"],
+            Adjust=self._cec_params["Adjust"],
+        )
+
+        currents = pvlib.pvsystem.i_from_v(
+            voltage=v_arr,
+            photocurrent=i_l,
+            saturation_current=i_o,
+            resistance_series=r_s,
+            resistance_shunt=r_sh,
+            nNsVth=a_mod,
+            method="lambertw",
+        )
+
+        currents = np.asarray(currents, dtype=float)
+
+        if clip_non_negative:
+            currents = np.clip(currents, 0.0, None)
+
+        return float(currents[0]) if is_scalar else currents
+
     def get_stc_parameters(self) -> PVOutput:
         """Calculate and return module operating characteristics at STC (1000 W/m^2, 25°C)."""
         return self.calculate(irradiance=1000.0, cell_temperature=25.0)
@@ -341,3 +429,4 @@ class SolarPVModel:
             "reference_stc": self.reference_stc,
             "cec_parameters": self._cec_params,
         }
+

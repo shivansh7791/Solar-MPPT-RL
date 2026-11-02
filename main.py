@@ -29,6 +29,11 @@ def parse_args() -> argparse.Namespace:
         help="Execute single-diode PV model at STC and display electrical outputs.",
     )
     parser.add_argument(
+        "--analyze-pv",
+        action="store_true",
+        help="Generate I-V/P-V characteristics, export metrics CSV, and generate publication plots.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -65,8 +70,48 @@ def main() -> int:
         logger.info(f"  Voc = {stc.v_oc:.3f} V (Ref: {config.pv.stc_v_oc:.3f} V)")
         logger.info(f"  Isc = {stc.i_sc:.3f} A (Ref: {config.pv.stc_i_sc:.3f} A)")
 
-    logger.info("Phase 1 operational status: PV MATHEMATICAL MODEL OPERATIONAL.")
+    if args.analyze_pv:
+        from app.pv import PVCharacteristicAnalyzer, SolarPVModel
+        from app.pv.pv_visualization import generate_all_phase_2_plots
+
+        logger.info("Executing Phase 2 PV Characteristic Analysis & Sweep...")
+        analyzer = PVCharacteristicAnalyzer(SolarPVModel(config.pv))
+
+        scenarios = [
+            (200.0, 25.0),
+            (400.0, 25.0),
+            (600.0, 25.0),
+            (800.0, 25.0),
+            (1000.0, 25.0),
+            (1000.0, 15.0),
+            (1000.0, 35.0),
+            (1000.0, 45.0),
+            (1000.0, 55.0),
+            (800.0, 30.0),
+            (600.0, 35.0),
+            (400.0, 45.0),
+            (250.0, 10.0),
+            (1000.0, 5.0),
+        ]
+        curves = analyzer.analyze_environmental_scenarios(scenarios)
+        df = analyzer.curves_to_mpp_dataframe(curves)
+        df = df.drop_duplicates(subset=["irradiance", "cell_temperature"]).sort_values(
+            by=["irradiance", "cell_temperature"], ascending=[False, True]
+        )
+
+        csv_path = config.paths.metrics_dir / "phase_2_mpp_analysis.csv"
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(csv_path, index=False)
+        logger.info(f"Saved {len(df)} MPP analysis records to: {csv_path}")
+
+        plot_paths = generate_all_phase_2_plots(
+            output_dir=config.paths.graphs_dir, analyzer=analyzer
+        )
+        logger.info(f"Generated {len(plot_paths)} publication figures in: {config.paths.graphs_dir}")
+
+    logger.info("Operational status: PHASE 2 PV CHARACTERISTICS & MPP IDENTIFICATION OPERATIONAL.")
     return 0
+
 
 
 
