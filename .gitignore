@@ -57,6 +57,7 @@ artifacts/
 *.pdf
 *.pptx
 results/diagrams/original_assets/
+build_*_presentation.py
 build_*_mppt_presentation.py
 
 
